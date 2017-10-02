@@ -95,7 +95,11 @@ if mount_result.returncode != 0:
     print(mount_result.stderr)
     exit(1)
 
-# TODO(Wesley) Run test programs
+test_file = mountpoint + "test.txt"
+# Run test programs
+# TODO: make sure binary is built.
+test_result = subprocess.run(["./pread", "{}".format(test_file)])
+print(test_result)
 
 subprocess.run(["umount", mountpoint], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 subprocess.run(["dmsetup", "remove", dm_volume_name])
