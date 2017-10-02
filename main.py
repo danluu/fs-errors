@@ -2,28 +2,31 @@
 
 import hashlib, shutil, tempfile, subprocess, os, time, argparse
 
-parser = argparse.ArgumentParser(description=
+def get_args():
+    # Check for root
+    if os.geteuid() != 0:
+        print("You must be root to use this script")
+        exit(1)
+
+
+    parser = argparse.ArgumentParser(description=
                                  "Mount filesystem using dmsetup and run test programs.")
-parser.add_argument("image_file")
-parser.add_argument("md5sum")
+    parser.add_argument("image_file")
+    parser.add_argument("md5sum")
 
-args = parser.parse_args()
-
-filesystem_image = args.image_file
-filesystem_md5sum = args.md5sum
-error_block = (2389, 1) #TODO(Wesley) multi-section errors
-
-# Check for root
-
-if os.geteuid() != 0:
-    print("You must be root to use this script")
-    exit(1)
+    args = parser.parse_args()
+    return args.image_file, args.md5sum
 
 # Verify md5sum
+def verify_md5sum(filesystem_image, filesystem_md5sum):
+    if hashlib.md5(open(filesystem_image, 'rb').read()).hexdigest() != filesystem_md5sum:
+        print("md5sum for filesystem image does not match")
+        exit(1)
 
-if hashlib.md5(open(filesystem_image, 'rb').read()).hexdigest() != filesystem_md5sum:
-    print("md5sum for filesystem image does not match")
-    exit(1)
+filesystem_image, filesystem_md5sum = get_args()
+error_block = (2389, 1) #TODO(Wesley) multi-section errors
+
+verify_md5sum(filesystem_image, filesystem_md5sum)
 
 # Make copy of file
 # This is done so that if any of the operations on the file done in this script
