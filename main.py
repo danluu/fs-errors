@@ -38,37 +38,41 @@ def make_tmpfile(image_path, filesystem_md5sum):
     return tmp_image_path
 
 
+# make loopback device
+def make_loopback_device(tmp_image_path):
+    losetup_result = subprocess.run("losetup -f".split(),
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE)
+
+    if losetup_result.returncode != 0:
+        print("Error finding unused loopback file:")
+        print(losetup_result.stderr)
+        exit(1)
+
+    loopback_name = losetup_result.stdout.strip()
+
+    # Possible TOCTOU issue here but it's basically impossible to avoid while using
+    # the losetup command line tool
+
+    losetup_result = subprocess.run(["losetup",
+                                     loopback_name,
+                                     tmp_image_path],
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE)
+
+    if losetup_result.returncode != 0:
+        print("Error setting up loopback file:")
+        print(losetup_result.stderr)
+        exit(1)
+
+    return loopback_name
+
+
 image_path, filesystem_md5sum = get_args()
 error_block = (2389, 1) #TODO(Wesley) multi-section errors
 
 tmp_image_path = make_tmpfile(image_path, filesystem_md5sum)
-
-
-# make loopback device
-
-losetup_result = subprocess.run("losetup -f".split(),
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE)
-if losetup_result.returncode != 0:
-    print("Error finding unused loopback file:")
-    print(losetup_result.stderr)
-    exit(1)
-
-loopback_name = losetup_result.stdout.strip()
-
-# Possible TOCTOU issue here but it's basically impossible to avoid while using
-# the losetup command line tool
-
-losetup_result = subprocess.run(["losetup",
-                                 loopback_name,
-                                 tmp_image_path],
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE)
-
-if losetup_result.returncode != 0:
-    print("Error finding setting up loopback file:")
-    print(losetup_result.stderr)
-    exit(1)
+loopback_name = make_loopback_device(tmp_image_path)
 
 # Find device size (in sectors)
 
