@@ -114,6 +114,41 @@ def run_dmsetup(dm_table):
 
     return dm_volume_name
 
+# Mount dm-mapped device
+def mount_dm_device(dm_volume_name):
+    mountpoint = "/mnt/{}/".format(dm_volume_name)
+    os.makedirs(mountpoint, exist_ok=True)
+
+    mount_result = subprocess.run(["mount",
+                                   "/dev/mapper/{}".format(dm_volume_name),
+                                   mountpoint],
+                                  stdout=subprocess.PIPE,
+                                  stderr=subprocess.PIPE)
+
+    if mount_result.returncode != 0:
+        print("Error mounting volume")
+        print(mount_result.stderr)
+        exit(1)
+
+    return mountpoint
+
+def exec_test(mountpoint):
+    test_file = mountpoint + "test.txt"
+    # Run test programs
+    # TODO: make sure binary is built.
+    test_result = subprocess.run(["./pread",
+                                  "{}".format(test_file)],
+                                 stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE)
+    # TODO: use csv library
+    # TODO: put result into output file.
+    print("{},{},{},{}".format(image_path,
+                               test_result.returncode,
+                               test_result.stdout.decode('utf-8').strip(),
+                               test_result.stderr.decode('utf-8').strip()))
+
+
+
 image_path, filesystem_md5sum = get_args()
 error_block = (2389, 1) #TODO(Wesley) multi-section errors
 
@@ -122,36 +157,8 @@ loopback_name = make_loopback_device(tmp_image_path)
 device_size = get_device_size(loopback_name)
 dm_table = get_dmsetup_table(error_block)
 dm_volume_name = run_dmsetup(dm_table)
-
-# Mount dm-mapped device
-
-mountpoint = "/mnt/{}/".format(dm_volume_name)
-os.makedirs(mountpoint, exist_ok=True)
-
-mount_result = subprocess.run(["mount",
-                               "/dev/mapper/{}".format(dm_volume_name),
-                               mountpoint],
-                              stdout=subprocess.PIPE,
-                              stderr=subprocess.PIPE)
-
-if mount_result.returncode != 0:
-    print("Error mounting volume")
-    print(mount_result.stderr)
-    exit(1)
-
-test_file = mountpoint + "test.txt"
-# Run test programs
-# TODO: make sure binary is built.
-test_result = subprocess.run(["./pread",
-                              "{}".format(test_file)],
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
-
-# TODO: use csv library
-print("{},{},{},{}".format(image_path,
-                           test_result.returncode,
-                           test_result.stdout.decode('utf-8').strip(),
-                           test_result.stderr.decode('utf-8').strip()))
+mountpoint = mount_dm_device(dm_volume_name)
+exec_test(mountpoint)
 
 subprocess.run(["umount", mountpoint], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 subprocess.run(["dmsetup", "remove", dm_volume_name])
