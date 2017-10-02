@@ -67,26 +67,28 @@ def make_loopback_device(tmp_image_path):
 
     return loopback_name
 
+# Find device size (in sectors)
+def get_device_size(loopback_name):
+    device_size_result = subprocess.run(["blockdev",
+                                         "--getsize",
+                                         loopback_name],
+                                        stdout=subprocess.PIPE,
+                                        stderr=subprocess.PIPE)
+
+    if device_size_result.returncode != 0:
+        print("Error getting size of block device")
+        print(device_size_result.stderr)
+
+    device_size = int(device_size_result.stdout.strip())
+    return device_size
+
 
 image_path, filesystem_md5sum = get_args()
 error_block = (2389, 1) #TODO(Wesley) multi-section errors
 
 tmp_image_path = make_tmpfile(image_path, filesystem_md5sum)
 loopback_name = make_loopback_device(tmp_image_path)
-
-# Find device size (in sectors)
-
-device_size_result = subprocess.run(["blockdev",
-                                     "--getsize",
-                                     loopback_name],
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE)
-
-if device_size_result.returncode != 0:
-    print("Error getting size of block device")
-    print(device_size_result.stderr)
-
-device_size = int(device_size_result.stdout.strip())
+device_size = get_device_size(loopback_name)
 
 # Calculate dmsetup table
 
