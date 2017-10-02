@@ -23,21 +23,25 @@ def verify_md5sum(image_path, filesystem_md5sum):
         print("md5sum for filesystem image does not match")
         exit(1)
 
-image_path, filesystem_md5sum = get_args()
-error_block = (2389, 1) #TODO(Wesley) multi-section errors
-
-
 # Make copy of file
 # This is done so that if any of the operations on the file done in this script
 # are destructive they will not destroy the original file.
+def make_tmpfile(image_path, filesystem_md5sum):
+    tmp_image_path = tempfile.mkstemp()[1]
+    gzip_path = tmp_image_path + ".gz"
+    shutil.copyfile(image_path, gzip_path)
 
-tmp_image_path = tempfile.mkstemp()[1]
-gzip_path = tmp_image_path + ".gz"
-shutil.copyfile(image_path, gzip_path)
+    gzip_result = subprocess.run("gunzip -f {}".format(gzip_path).split())
+    # TODO: check for error.
 
-gzip_result = subprocess.run("gunzip -f {}".format(gzip_path).split())
+    verify_md5sum(tmp_image_path, filesystem_md5sum)
+    return tmp_image_path
 
-verify_md5sum(tmp_image_path, filesystem_md5sum)
+
+image_path, filesystem_md5sum = get_args()
+error_block = (2389, 1) #TODO(Wesley) multi-section errors
+
+tmp_image_path = make_tmpfile(image_path, filesystem_md5sum)
 
 
 # make loopback device
