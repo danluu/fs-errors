@@ -26,14 +26,19 @@ def verify_md5sum(filesystem_image, filesystem_md5sum):
 filesystem_image, filesystem_md5sum = get_args()
 error_block = (2389, 1) #TODO(Wesley) multi-section errors
 
-verify_md5sum(filesystem_image, filesystem_md5sum)
 
 # Make copy of file
 # This is done so that if any of the operations on the file done in this script
 # are destructive they will not destroy the original file.
 
 filesystem_file = tempfile.mkstemp()[1]
-shutil.copyfile(filesystem_image, filesystem_file)
+gzip_file = filesystem_file + ".gz"
+shutil.copyfile(filesystem_image, gzip_file)
+
+gzip_result = subprocess.run("gunzip {}".format(gzip_file).split())
+
+verify_md5sum(filesystem_file, filesystem_md5sum)
+
 
 # make loopback device
 
