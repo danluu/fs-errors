@@ -98,8 +98,10 @@ if mount_result.returncode != 0:
 test_file = mountpoint + "test.txt"
 # Run test programs
 # TODO: make sure binary is built.
-test_result = subprocess.run(["./pread", "{}".format(test_file)])
-print(test_result)
+test_result = subprocess.run(["./pread", "{}".format(test_file)], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+# TODO: use csv library
+print("{},{},{},{}".format(filesystem_image, test_result.returncode, test_result.stdout.decode('utf-8').strip(), test_result.stderr.decode('utf-8').strip()))
 
 subprocess.run(["umount", mountpoint], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 subprocess.run(["dmsetup", "remove", dm_volume_name])
