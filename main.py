@@ -18,12 +18,12 @@ def get_args():
     return args.image_file, args.md5sum
 
 # Verify md5sum
-def verify_md5sum(filesystem_image, filesystem_md5sum):
-    if hashlib.md5(open(filesystem_image, 'rb').read()).hexdigest() != filesystem_md5sum:
+def verify_md5sum(image_path, filesystem_md5sum):
+    if hashlib.md5(open(image_path, 'rb').read()).hexdigest() != filesystem_md5sum:
         print("md5sum for filesystem image does not match")
         exit(1)
 
-filesystem_image, filesystem_md5sum = get_args()
+image_path, filesystem_md5sum = get_args()
 error_block = (2389, 1) #TODO(Wesley) multi-section errors
 
 
@@ -31,13 +31,13 @@ error_block = (2389, 1) #TODO(Wesley) multi-section errors
 # This is done so that if any of the operations on the file done in this script
 # are destructive they will not destroy the original file.
 
-filesystem_file = tempfile.mkstemp()[1]
-gzip_file = filesystem_file + ".gz"
-shutil.copyfile(filesystem_image, gzip_file)
+tmp_image_path = tempfile.mkstemp()[1]
+gzip_path = tmp_image_path + ".gz"
+shutil.copyfile(image_path, gzip_path)
 
-gzip_result = subprocess.run("gunzip -f {}".format(gzip_file).split())
+gzip_result = subprocess.run("gunzip -f {}".format(gzip_path).split())
 
-verify_md5sum(filesystem_file, filesystem_md5sum)
+verify_md5sum(tmp_image_path, filesystem_md5sum)
 
 
 # make loopback device
@@ -57,7 +57,7 @@ loopback_name = losetup_result.stdout.strip()
 
 losetup_result = subprocess.run(["losetup",
                                  loopback_name,
-                                 filesystem_file],
+                                 tmp_image_path],
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE)
 
@@ -132,7 +132,7 @@ test_result = subprocess.run(["./pread",
                              stderr=subprocess.PIPE)
 
 # TODO: use csv library
-print("{},{},{},{}".format(filesystem_image,
+print("{},{},{},{}".format(image_path,
                            test_result.returncode,
                            test_result.stdout.decode('utf-8').strip(),
                            test_result.stderr.decode('utf-8').strip()))
@@ -140,4 +140,4 @@ print("{},{},{},{}".format(filesystem_image,
 subprocess.run(["umount", mountpoint], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 subprocess.run(["dmsetup", "remove", dm_volume_name])
 subprocess.run(["losetup", "-d", loopback_name])
-os.remove(filesystem_file)
+os.remove(tmp_image_path)
