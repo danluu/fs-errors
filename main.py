@@ -96,6 +96,23 @@ def get_dmsetup_table(error_block):
 
     return dm_table
 
+# Run dmsetup
+def run_dmsetup(dm_table):
+    dm_volume_name = "fserror_test_{}".format(time.time())
+    dm_command = subprocess.Popen(["dmsetup",
+                                   "create",
+                                   dm_volume_name],
+                                  stdout=subprocess.PIPE,
+                                  stderr=subprocess.PIPE,
+                                  stdin=subprocess.PIPE)
+    dm_command_output = dm_command.communicate(str.encode(dm_table))
+
+    if dm_command.returncode != 0:
+        print("Error setting up device-mapper volume")
+        print(dm_command_output[1])
+        exit(1)
+
+    return dm_volume_name
 
 image_path, filesystem_md5sum = get_args()
 error_block = (2389, 1) #TODO(Wesley) multi-section errors
@@ -104,23 +121,7 @@ tmp_image_path = make_tmpfile(image_path, filesystem_md5sum)
 loopback_name = make_loopback_device(tmp_image_path)
 device_size = get_device_size(loopback_name)
 dm_table = get_dmsetup_table(error_block)
-
-
-# Run dmsetup
-
-dm_volume_name = "fserror_test_{}".format(time.time())
-dm_command = subprocess.Popen(["dmsetup",
-                               "create",
-                               dm_volume_name],
-                              stdout=subprocess.PIPE,
-                              stderr=subprocess.PIPE,
-                              stdin=subprocess.PIPE)
-dm_command_output = dm_command.communicate(str.encode(dm_table))
-
-if dm_command.returncode != 0:
-    print("Error setting up device-mapper volume")
-    print(dm_command_output[1])
-    exit(1)
+dm_volume_name = run_dmsetup(dm_table)
 
 # Mount dm-mapped device
 
