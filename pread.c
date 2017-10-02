@@ -6,11 +6,15 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-int main() {
-  char* filename = "test.txt";
+int main(int argc, char *argv[]) {
+  if (argc != 2) {
+    printf("Expected 1 argument, found %d\n", argc-1);
+    return 1;
+  }
+
   char buf[1024];
 
-  int fd = open(filename, O_RDONLY);
+  int fd = open(argv[1], O_RDONLY);
   if (fd < 0) {
     printf("open fail %s\n", strerror(errno));
     return fd;
