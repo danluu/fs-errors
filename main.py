@@ -35,7 +35,7 @@ filesystem_file = tempfile.mkstemp()[1]
 gzip_file = filesystem_file + ".gz"
 shutil.copyfile(filesystem_image, gzip_file)
 
-gzip_result = subprocess.run("gunzip {}".format(gzip_file).split())
+gzip_result = subprocess.run("gunzip -f {}".format(gzip_file).split())
 
 verify_md5sum(filesystem_file, filesystem_md5sum)
 
