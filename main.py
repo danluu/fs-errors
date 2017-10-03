@@ -1,6 +1,12 @@
 #!/usr/bin/python
 
-import hashlib, shutil, tempfile, subprocess, os, time, argparse
+import argparse
+import hashlib
+import shutil
+import subprocess
+import tempfile
+import time
+import os
 
 def get_args():
     # Check for root
@@ -10,7 +16,7 @@ def get_args():
 
 
     parser = argparse.ArgumentParser(description=
-                                 "Mount filesystem using dmsetup and run test programs.")
+                                     "Mount filesystem using dmsetup and run test programs.")
     parser.add_argument("image_file")
     parser.add_argument("md5sum")
 
