@@ -9,6 +9,10 @@ This repo contains tooling for injecting errors into filesystems using device-ma
 
 ## Installation
 
+~~~
+sudo apt install dmsetup
+~~~
+
 Requires btrfs drivers to be installed.
 
 TODO(Wesley) more details
