@@ -32,6 +32,7 @@ def make_tmpfile(image_path, filesystem_md5sum):
     shutil.copyfile(image_path, gzip_path)
 
     gzip_result = subprocess.run("gunzip -f {}".format(gzip_path).split())
+
     # TODO: check for error.
 
     verify_md5sum(tmp_image_path, filesystem_md5sum)
@@ -84,7 +85,7 @@ def get_device_size(loopback_name):
 
 
 # Calculate dmsetup table
-def get_dmsetup_table(error_block):
+def get_dmsetup_table(device_size, error_block):
     dm_table = """\
     0 {error_start} linear /dev/loop0 0
     {error_start} {error_size} error
@@ -132,7 +133,7 @@ def mount_dm_device(dm_volume_name):
 
     return mountpoint
 
-def exec_test(mountpoint):
+def exec_test(mountpoint, image_path):
     test_file = mountpoint + "test.txt"
     # Run test programs
     # TODO: make sure binary is built.
@@ -147,20 +148,22 @@ def exec_test(mountpoint):
                                test_result.stdout.decode('utf-8').strip(),
                                test_result.stderr.decode('utf-8').strip()))
 
+def main():
+    image_path, filesystem_md5sum = get_args()
+    error_block = (2389, 1) #TODO(Wesley) multi-section errors
 
+    tmp_image_path = make_tmpfile(image_path, filesystem_md5sum)
+    loopback_name = make_loopback_device(tmp_image_path)
+    device_size = get_device_size(loopback_name)
+    dm_table = get_dmsetup_table(device_size, error_block)
+    dm_volume_name = run_dmsetup(dm_table)
+    mountpoint = mount_dm_device(dm_volume_name)
+    exec_test(mountpoint, image_path)
 
-image_path, filesystem_md5sum = get_args()
-error_block = (2389, 1) #TODO(Wesley) multi-section errors
+    # TODO: unmount, remove, etc., when an error occurs and the script terminates early.
+    subprocess.run(["umount", mountpoint], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    subprocess.run(["dmsetup", "remove", dm_volume_name])
+    subprocess.run(["losetup", "-d", loopback_name])
+    os.remove(tmp_image_path)
 
-tmp_image_path = make_tmpfile(image_path, filesystem_md5sum)
-loopback_name = make_loopback_device(tmp_image_path)
-device_size = get_device_size(loopback_name)
-dm_table = get_dmsetup_table(error_block)
-dm_volume_name = run_dmsetup(dm_table)
-mountpoint = mount_dm_device(dm_volume_name)
-exec_test(mountpoint)
-
-subprocess.run(["umount", mountpoint], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-subprocess.run(["dmsetup", "remove", dm_volume_name])
-subprocess.run(["losetup", "-d", loopback_name])
-os.remove(tmp_image_path)
+main()
