@@ -154,7 +154,7 @@ def exec_test(mountpoint, image_path):
     # TODO: put result into output file.
     print("{},{},{},{}".format(image_path,
                                test_result.returncode,
-                               test_result.stdout.decode('utf-8').strip(),
+                               test_result.stdout.strip(),
                                test_result.stderr.decode('utf-8').strip()))
 
 def main():
