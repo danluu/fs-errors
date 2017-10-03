@@ -38,8 +38,11 @@ def make_tmpfile(image_path, filesystem_md5sum):
     shutil.copyfile(image_path, gzip_path)
 
     gzip_result = subprocess.run("gunzip -f {}".format(gzip_path).split())
+    if gzip_result.returncode != 0:
+        print("Error ungzipping image:")
+        print(gzip_result.stderr)
+        exit(1)
 
-    # TODO: check for error.
 
     verify_md5sum(tmp_image_path, filesystem_md5sum)
     return tmp_image_path
