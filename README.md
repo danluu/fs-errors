@@ -1,5 +1,10 @@
 # fs-errors
 
+~~~
+make pread
+sudo python3 main.py images/ext4.img.gz deafbf8b0e316d82adad16b42975f24d
+~~~
+
 This repo contains tooling for injecting errors into filesystems using device-mapper.
 
 ## Installation
