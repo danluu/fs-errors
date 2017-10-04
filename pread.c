@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
     char expect = (i % 16) + 'a';
     if (rcode < 0 || expect != c) {
       error_seen = 1;
-      printf("%d,%c,%c\n", i, expect, c);
+      printf("%d,%zd,%c,%c\n", i, rcode, expect, c);
     }
   }
 

@@ -141,12 +141,12 @@ def exec_test(mountpoint, image_path):
     # TODO: put result into output file.
     print("{},{},{},{}".format(image_path,
                                test_result.returncode,
-                               test_result.stdout.decode('utf-8').strip(),
+                               test_result.stdout.decode('unicode_escape').strip(),
                                test_result.stderr.decode('utf-8').strip()))
 
 def main():
     image_path, filesystem_md5sum = get_args()
-    error_block = (2392, 1) #TODO(Wesley) multi-section errors
+    error_block = (7778, 1) #TODO(Wesley) multi-section errors
 
     tmp_image_path = make_tmpfile(image_path, filesystem_md5sum)
     loopback_name = make_loopback_device(tmp_image_path)
