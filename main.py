@@ -61,7 +61,7 @@ def make_loopback_device(tmp_image_path):
     losetup_command_1 = "losetup -f".split()
     losetup_result = exec_command(losetup_command_1)
 
-    loopback_name = losetup_result.stdout.strip()
+    loopback_name = losetup_result.stdout.strip().decode('utf-8')
 
     # Possible TOCTOU issue here but it's basically impossible to avoid while using
     # the losetup command line tool
@@ -95,21 +95,24 @@ def get_dmsetup_table(device_size, loop_name, error_block):
         linear_start=sum(error_block),
         linear_end_size=device_size-sum(error_block))
 
+    print(dm_table)
     return dm_table
 
 # Run dmsetup
 def run_dmsetup(dm_table):
     dm_volume_name = "fserror_test_{}".format(time.time())
     # TODO: should work with exec_command.
-    dm_command = subprocess.Popen(["dmsetup",
-                                   "create",
-                                   dm_volume_name],
-                                  stdout=subprocess.PIPE,
-                                  stderr=subprocess.PIPE,
-                                  stdin=subprocess.PIPE)
-    dm_command_output = dm_command.communicate(str.encode(dm_table))
+    dm_command = ["dmsetup",
+                  "create",
+                  dm_volume_name]
+    print(dm_command)
+    dm_subprocess = subprocess.Popen(dm_command,
+                                     stdout=subprocess.PIPE,
+                                     stderr=subprocess.PIPE,
+                                     stdin=subprocess.PIPE)
+    dm_command_output = dm_subprocess.communicate(str.encode(dm_table))
 
-    if dm_command.returncode != 0:
+    if dm_subprocess.returncode != 0:
         print("Error setting up device-mapper volume")
         print(dm_command_output[1])
         exit(1)
@@ -153,7 +156,6 @@ def main():
     mountpoint = mount_dm_device(dm_volume_name)
     exec_test(mountpoint, image_path)
 
-    exit(1)
     # TODO: unmount, remove, etc., when an error occurs and the script terminates early.
     exec_command(["umount", mountpoint])
     exec_command(["dmsetup", "remove", dm_volume_name])
