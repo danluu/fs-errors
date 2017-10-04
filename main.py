@@ -8,6 +8,17 @@ import tempfile
 import time
 import os
 
+def exec_command(command, exit_on_error=True):
+    command_result = subprocess.run(command,
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE)
+    if command_result.returncode != 0 and exit_on_error:
+        print("Error running {}".format(command))
+        print(command_result.stderr)
+        exit(1)
+
+    return command_result
+
 def get_args():
     # Check for root
     if os.geteuid() != 0:
@@ -37,12 +48,8 @@ def make_tmpfile(image_path, filesystem_md5sum):
     gzip_path = tmp_image_path + ".gz"
     shutil.copyfile(image_path, gzip_path)
 
-    gzip_result = subprocess.run("gunzip -f {}".format(gzip_path).split())
-    if gzip_result.returncode != 0:
-        print("Error ungzipping image:")
-        print(gzip_result.stderr)
-        exit(1)
-
+    gzip_command = "gunzip -f {}".format(gzip_path).split()
+    exec_command(gzip_command)
 
     verify_md5sum(tmp_image_path, filesystem_md5sum)
     return tmp_image_path
@@ -50,44 +57,26 @@ def make_tmpfile(image_path, filesystem_md5sum):
 
 # make loopback device
 def make_loopback_device(tmp_image_path):
-    losetup_result = subprocess.run("losetup -f".split(),
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE)
-
-    if losetup_result.returncode != 0:
-        print("Error finding unused loopback file:")
-        print(losetup_result.stderr)
-        exit(1)
+    losetup_command_1 = "losetup -f".split()
+    losetup_result = exec_command(losetup_command_1)
 
     loopback_name = losetup_result.stdout.strip()
 
     # Possible TOCTOU issue here but it's basically impossible to avoid while using
     # the losetup command line tool
 
-    losetup_result = subprocess.run(["losetup",
-                                     loopback_name,
-                                     tmp_image_path],
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE)
-
-    if losetup_result.returncode != 0:
-        print("Error setting up loopback file:")
-        print(losetup_result.stderr)
-        exit(1)
+    losetup_command_2 = ["losetup",
+                         loopback_name,
+                         tmp_image_path]
+    exec_command(losetup_command_2)
 
     return loopback_name
 
 # Find device size (in sectors)
 def get_device_size(loopback_name):
-    device_size_result = subprocess.run(["blockdev",
-                                         "--getsize",
-                                         loopback_name],
-                                        stdout=subprocess.PIPE,
-                                        stderr=subprocess.PIPE)
-
-    if device_size_result.returncode != 0:
-        print("Error getting size of block device")
-        print(device_size_result.stderr)
+    device_size_result = exec_command(["blockdev",
+                                       "--getsize",
+                                       loopback_name])
 
     device_size = int(device_size_result.stdout.strip())
     return device_size
@@ -109,6 +98,7 @@ def get_dmsetup_table(device_size, error_block):
 # Run dmsetup
 def run_dmsetup(dm_table):
     dm_volume_name = "fserror_test_{}".format(time.time())
+    # TODO: should work with exec_command.
     dm_command = subprocess.Popen(["dmsetup",
                                    "create",
                                    dm_volume_name],
@@ -129,16 +119,9 @@ def mount_dm_device(dm_volume_name):
     mountpoint = "/mnt/{}/".format(dm_volume_name)
     os.makedirs(mountpoint, exist_ok=True)
 
-    mount_result = subprocess.run(["mount",
-                                   "/dev/mapper/{}".format(dm_volume_name),
-                                   mountpoint],
-                                  stdout=subprocess.PIPE,
-                                  stderr=subprocess.PIPE)
-
-    if mount_result.returncode != 0:
-        print("Error mounting volume")
-        print(mount_result.stderr)
-        exit(1)
+    exec_command(["mount",
+                  "/dev/mapper/{}".format(dm_volume_name),
+                  mountpoint])
 
     return mountpoint
 
@@ -146,20 +129,19 @@ def exec_test(mountpoint, image_path):
     test_file = mountpoint + "test.txt"
     # Run test programs
     # TODO: make sure binary is built.
-    test_result = subprocess.run(["./pread",
-                                  "{}".format(test_file)],
-                                 stdout=subprocess.PIPE,
-                                 stderr=subprocess.PIPE)
+    test_result = exec_command(["./pread",
+                                "{}".format(test_file)],
+                               False)
     # TODO: use csv library
     # TODO: put result into output file.
     print("{},{},{},{}".format(image_path,
                                test_result.returncode,
-                               test_result.stdout.strip(),
+                               test_result.stdout.decode('utf-8').strip(),
                                test_result.stderr.decode('utf-8').strip()))
 
 def main():
     image_path, filesystem_md5sum = get_args()
-    error_block = (2390, 1) #TODO(Wesley) multi-section errors
+    error_block = (2392, 1) #TODO(Wesley) multi-section errors
 
     tmp_image_path = make_tmpfile(image_path, filesystem_md5sum)
     loopback_name = make_loopback_device(tmp_image_path)
@@ -169,10 +151,11 @@ def main():
     mountpoint = mount_dm_device(dm_volume_name)
     exec_test(mountpoint, image_path)
 
+    exit(1)
     # TODO: unmount, remove, etc., when an error occurs and the script terminates early.
-    subprocess.run(["umount", mountpoint], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    subprocess.run(["dmsetup", "remove", dm_volume_name])
-    subprocess.run(["losetup", "-d", loopback_name])
+    exec_command(["umount", mountpoint])
+    exec_command(["dmsetup", "remove", dm_volume_name])
+    exec_command(["losetup", "-d", loopback_name])
     os.remove(tmp_image_path)
 
 main()
