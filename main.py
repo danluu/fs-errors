@@ -9,7 +9,7 @@ import time
 import os
 
 def exec_command(command, exit_on_error=True):
-    print(command)
+    print(' '.join(command))
     command_result = subprocess.run(command,
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE)
@@ -47,6 +47,7 @@ def verify_md5sum(image_path, filesystem_md5sum):
 def make_tmpfile(image_path, filesystem_md5sum):
     tmp_image_path = tempfile.mkstemp()[1]
     gzip_path = tmp_image_path + ".gz"
+    print('cp {} {}'.format(image_path, gzip_path))
     shutil.copyfile(image_path, gzip_path)
 
     gzip_command = "gunzip -f {}".format(gzip_path).split()
@@ -95,7 +96,9 @@ def get_dmsetup_table(device_size, loop_name, error_block):
         linear_start=sum(error_block),
         linear_end_size=device_size-sum(error_block))
 
-    print(dm_table)
+    commented_table = '#' + '#'.join(dm_table.splitlines(True))
+    print(commented_table)
+
     return dm_table
 
 # Run dmsetup
@@ -105,7 +108,7 @@ def run_dmsetup(dm_table):
     dm_command = ["dmsetup",
                   "create",
                   dm_volume_name]
-    print(dm_command)
+    print(' '.join(dm_command))
     dm_subprocess = subprocess.Popen(dm_command,
                                      stdout=subprocess.PIPE,
                                      stderr=subprocess.PIPE,
@@ -146,7 +149,8 @@ def exec_test(mountpoint, image_path):
 
 def main():
     image_path, filesystem_md5sum = get_args()
-    error_block = (7778, 1) #TODO(Wesley) multi-section errors
+    # error_block = (7778, 1) #TODO(Wesley) multi-section errors
+    error_block = (2389, 1) #TODO(Wesley) multi-section errors
 
     tmp_image_path = make_tmpfile(image_path, filesystem_md5sum)
     loopback_name = make_loopback_device(tmp_image_path)
