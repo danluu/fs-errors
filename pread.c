@@ -34,13 +34,13 @@ int main(int argc, char *argv[]) {
       error_seen = 1;
       saved_errno = errno;
       saved_rcode = rcode;
-      printf("%d,%zd,%c,%c\n", i, rcode, expect, c);
+      // printf("%d,%zd,%c,%c\n", i, rcode, expect, c);
     }
   }
 
   // TODO: consider tracking more than one error.
   if (error_seen) {
-    printf("read fail %s\n", strerror(saved_errno));
+    printf("read fail. errno: %s\n", strerror(saved_errno));
     return saved_rcode;
   } else {
     return 0;
