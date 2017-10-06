@@ -172,8 +172,9 @@ def main():
     with open(results_path, 'w') as results_file:
         results_writer = csv.writer(results_file)
 
-        test_command = './pread'
-        exec_test(mountpoint, image_path, test_command, results_writer)
+        test_commands = ['./pread', './pwrite']
+        for command in test_commands:
+            exec_test(mountpoint, image_path, command, results_writer)
 
     # TODO: unmount, remove, etc., when an error occurs and the script terminates early.
     exec_command(["umount", mountpoint])

@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
 
   ssize_t rcode = pwrite(fd, &buf, 100, 0);
   if (rcode < 0) {
-    printf("write fail %s\n", strerror(errno));
+    printf("write fail. errno: %s\n", strerror(errno));
     return rcode;
   } else {
     return 0;
