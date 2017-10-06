@@ -6,11 +6,15 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-int main() {
-  char* filename = "test.txt";
-  char buf[1024];
+int main(int argc, char *argv[]) {
+  if (argc != 2) {
+    printf("Expected 1 argument (filename), found %d\n", argc-1);
+    return 1;
+  }
 
-  int fd = open(filename, O_WRONLY);
+  char buf[1024] = {0};
+
+  int fd = open(argv[1], O_WRONLY);
   if (fd < 0) {
     printf("open fail %s\n", strerror(errno));
     return fd;
@@ -18,7 +22,7 @@ int main() {
 
   ssize_t rcode = pwrite(fd, &buf, 100, 0);
   if (rcode < 0) {
-    printf("read fail %s\n", strerror(errno));
+    printf("write fail %s\n", strerror(errno));
     return rcode;
   } else {
     return 0;

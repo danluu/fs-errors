@@ -12,7 +12,7 @@ int main(int argc, char *argv[]) {
   int error_seen = 0;
 
   if (argc != 2) {
-    printf("Expected 1 argument, found %d\n", argc-1);
+    printf("Expected 1 argument (filename), found %d\n", argc-1);
     return 1;
   }
 
