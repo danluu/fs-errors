@@ -2,3 +2,4 @@ image,offset,md5sum
 images/fat32.img.gz,49,58d3068fd2e814b42317d6304bb27100
 images/ext3.img.gz,3074,2e5358100bf5dee0a8c3a01b8c4d89c8
 images/ext4.img.gz,2390,deafbf8b0e316d82adad16b42975f24d
+images/xfs.img.gz,6967,39df40b11662be53c94f195cef9f3285
