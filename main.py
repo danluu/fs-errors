@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import argparse
+import csv
 import hashlib
 import shutil
 import subprocess
@@ -133,21 +134,30 @@ def mount_dm_device(dm_volume_name):
 
     return mountpoint
 
-def exec_test(mountpoint, image_path):
+def exec_test(mountpoint, image_path, test_command, results_writer):
     test_file = mountpoint + "test.txt"
     # Run test programs
     # TODO: make sure binary is built.
-    test_result = exec_command(["./pread",
+    test_result = exec_command([test_command,
                                 "{}".format(test_file)],
                                False)
     # TODO: use csv library
     # TODO: put result into output file.
-    print("{},{},{},{}".format(image_path,
-                               test_result.returncode,
-                               test_result.stdout.decode('unicode_escape').strip(),
-                               test_result.stderr.decode('utf-8').strip()))
+    # print("{},{},{},{}".format(image_path,
+    #                            test_result.returncode,
+    #                            test_result.stdout.decode('unicode_escape').strip(),
+    #                            test_result.stderr.decode('utf-8').strip()))
+
+    results_writer.writerow([image_path,
+                             test_command,
+                             test_result.returncode,
+                             test_result.stdout.decode('unicode_escape').strip(),
+                             test_result.stderr.decode('utf-8').strip()])
+
 
 def main():
+    results_path = 'fs-results.csv'
+    
     image_path, filesystem_md5sum = get_args()
     # error_block = (7778, 1) #TODO(Wesley) multi-section errors
     error_block = (2390, 1) #TODO(Wesley) multi-section errors
@@ -158,7 +168,12 @@ def main():
     dm_table = get_dmsetup_table(device_size, loopback_name, error_block)
     dm_volume_name = run_dmsetup(dm_table)
     mountpoint = mount_dm_device(dm_volume_name)
-    exec_test(mountpoint, image_path)
+
+    with open(results_path, 'w') as results_file:
+        results_writer = csv.writer(results_file)
+
+        test_command = './pread'
+        exec_test(mountpoint, image_path, test_command, results_writer)
 
     # TODO: unmount, remove, etc., when an error occurs and the script terminates early.
     exec_command(["umount", mountpoint])
