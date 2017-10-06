@@ -1,6 +1,5 @@
 #!/usr/bin/python
 
-import argparse
 import csv
 import hashlib
 import shutil
@@ -27,15 +26,6 @@ def get_args():
     if os.geteuid() != 0:
         print("You must be root to use this script")
         exit(1)
-
-
-    parser = argparse.ArgumentParser(description=
-                                     "Mount filesystem using dmsetup and run test programs.")
-    parser.add_argument("image_file")
-    parser.add_argument("md5sum")
-
-    args = parser.parse_args()
-    return args.image_file, args.md5sum
 
 # Verify md5sum
 def verify_md5sum(image_path, filesystem_md5sum):
@@ -176,10 +166,7 @@ def main():
         results_writer = csv.writer(results_file)
 
         for config in configs:
-            # image_path, filesystem_md5sum = get_args()
-            # error_block = (7778, 1) #TODO(Wesley) multi-section errors
-            # error_block = (2390, 1) #TODO(Wesley) multi-section errors
-            # error_block = (3074, 1) #TODO(Wesley) multi-section errors
+            get_args()
             error_block = (config['offset'], 1) #TODO(Wesley) multi-section errors
 
             tmp_image_path = make_tmpfile(config['image'], config['md5sum'])
