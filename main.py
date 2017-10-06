@@ -150,7 +150,7 @@ def exec_test(mountpoint, image_path):
 def main():
     image_path, filesystem_md5sum = get_args()
     # error_block = (7778, 1) #TODO(Wesley) multi-section errors
-    error_block = (2389, 1) #TODO(Wesley) multi-section errors
+    error_block = (2390, 1) #TODO(Wesley) multi-section errors
 
     tmp_image_path = make_tmpfile(image_path, filesystem_md5sum)
     loopback_name = make_loopback_device(tmp_image_path)
