@@ -8,6 +8,8 @@
 
 #define SIZE 7999
 
+// #define DEBUG_JUNK 1
+
 int main(int argc, char *argv[]) {
   int error_seen = 0;
 
@@ -29,16 +31,20 @@ int main(int argc, char *argv[]) {
   ssize_t saved_rcode;
   for (int i = 0; i < SIZE; ++i) {
     ssize_t rcode = pread(fd, &c, 1, i);
-    // char expect = (i % 16) + 'a';
     if (rcode < 0) {
       error_seen = 1;
       saved_errno = errno;
       saved_rcode = rcode;
       // printf("%d,%zd,%c,%c\n", i, rcode, expect, c);
     }
-    // if (expect != c) {
-    //   error_seen = 1;
-    // }
+
+#ifdef DEBUG_JUNK
+    char expect = (i % 16) + 'a';
+    if (expect != c) {
+      printf("%d,%zd,%c,%c\n", i, rcode, expect, c);
+      error_seen = 1;
+    }
+#endif
   }
 
   // TODO: consider tracking more than one error.
