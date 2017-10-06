@@ -25,22 +25,23 @@ int main(int argc, char *argv[]) {
     return fd;
   }
 
+  int saved_errno;
+  ssize_t saved_rcode;
   for (int i = 0; i < SIZE; ++i) {
     ssize_t rcode = pread(fd, &c, 1, i);
     char expect = (i % 16) + 'a';
     if (rcode < 0 || expect != c) {
       error_seen = 1;
+      saved_errno = errno;
+      saved_rcode = rcode;
       printf("%d,%zd,%c,%c\n", i, rcode, expect, c);
     }
   }
 
-  // buf[SIZE-1] = '\0';
-
-  // printf("%s", buf);
+  // TODO: consider tracking more than one error.
   if (error_seen) {
-    // TODO: move errno extraction up.
-    printf("read fail %s\n", strerror(errno));
-    return -1;
+    printf("read fail %s\n", strerror(saved_errno));
+    return saved_rcode;
   } else {
     return 0;
   }
