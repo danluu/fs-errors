@@ -21,6 +21,7 @@ def exec_command(command, exit_on_error=True):
 
     return command_result
 
+# TODO: allow using args or input config file.
 def get_args():
     # Check for root
     if os.geteuid() != 0:
@@ -154,33 +155,48 @@ def exec_test(mountpoint, image_path, test_command, results_writer):
                              test_result.stdout.decode('unicode_escape').strip(),
                              test_result.stderr.decode('utf-8').strip()])
 
+def read_config():
+    input_path = 'inputs.csv'
+    inputs = []
+    with open(input_path, 'r') as input_file:
+        input_reader = csv.reader(input_file)
+        next(input_reader, None) # skip header.
+        for row in input_reader:
+            inputs.append({'image': row[0],
+                           'offset': int(row[1]),
+                           'md5sum': row[2]})
+    return inputs
+
 
 def main():
     results_path = 'fs-results.csv'
-    
-    image_path, filesystem_md5sum = get_args()
-    # error_block = (7778, 1) #TODO(Wesley) multi-section errors
-    # error_block = (2390, 1) #TODO(Wesley) multi-section errors
-    error_block = (3074, 1) #TODO(Wesley) multi-section errors
-
-    tmp_image_path = make_tmpfile(image_path, filesystem_md5sum)
-    loopback_name = make_loopback_device(tmp_image_path)
-    device_size = get_device_size(loopback_name)
-    dm_table = get_dmsetup_table(device_size, loopback_name, error_block)
-    dm_volume_name = run_dmsetup(dm_table)
-    mountpoint = mount_dm_device(dm_volume_name)
+    configs = read_config()
 
     with open(results_path, 'w') as results_file:
         results_writer = csv.writer(results_file)
 
-        test_commands = ['./pread', './pwrite']
-        for command in test_commands:
-            exec_test(mountpoint, image_path, command, results_writer)
+        for config in configs:
+            # image_path, filesystem_md5sum = get_args()
+            # error_block = (7778, 1) #TODO(Wesley) multi-section errors
+            # error_block = (2390, 1) #TODO(Wesley) multi-section errors
+            # error_block = (3074, 1) #TODO(Wesley) multi-section errors
+            error_block = (config['offset'], 1) #TODO(Wesley) multi-section errors
 
-    # TODO: unmount, remove, etc., when an error occurs and the script terminates early.
-    exec_command(["umount", mountpoint])
-    exec_command(["dmsetup", "remove", dm_volume_name])
-    exec_command(["losetup", "-d", loopback_name])
-    os.remove(tmp_image_path)
+            tmp_image_path = make_tmpfile(config['image'], config['md5sum'])
+            loopback_name = make_loopback_device(tmp_image_path)
+            device_size = get_device_size(loopback_name)
+            dm_table = get_dmsetup_table(device_size, loopback_name, error_block)
+            dm_volume_name = run_dmsetup(dm_table)
+            mountpoint = mount_dm_device(dm_volume_name)
+
+            test_commands = ['./pread', './pwrite']
+            for command in test_commands:
+                exec_test(mountpoint, config['image'], command, results_writer)
+
+            # TODO: unmount, remove, etc., when an error occurs and the script terminates early.
+            exec_command(["umount", mountpoint])
+            exec_command(["dmsetup", "remove", dm_volume_name])
+            exec_command(["losetup", "-d", loopback_name])
+            os.remove(tmp_image_path)
 
 main()
