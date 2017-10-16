@@ -9,8 +9,10 @@ This repo contains tooling for injecting errors into filesystems using device-ma
 
 ## Making files
 
+~~~
 dd if=/dev/zero of=filesystem.img bs=1M count=1
 mkfs.<filesystem_name> filesystem.img
+~~~
 
 ## Installation
 
