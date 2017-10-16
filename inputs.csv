@@ -5,4 +5,7 @@ images/ext4.img.gz,2390,deafbf8b0e316d82adad16b42975f24d
 images/xfs.img.gz,6976,39df40b11662be53c94f195cef9f3285
 images/jfs.img.gz,280,a35d663ad92ad48819315d49c817b241
 images/exfat.img.gz,168,646b47badfa913ba32513e91dad32e92
+images/btrfs.img.gz,74078,58bada4cc010fa9632c66305464be039
+images/btrfs.img.gz,74142,58bada4cc010fa9632c66305464be039
+images/btrfs.img.gz,139614,58bada4cc010fa9632c66305464be039
 images/ext4-largefile.img.gz,7778,2717e3c9509fc662ae67ebf5293e1c97
