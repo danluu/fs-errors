@@ -33,3 +33,5 @@ Each filesystem contains `test.txt`. `test.txt` contains Lorem ipsum text (see i
 In the case of the -largefile images, `test.txt` contains the letters of the alphabet repeated enough to make 8K of text. See `images/large_test.txt`.
 
 To find the error offset for a new filesystem, you can open the file up in a hex editor, find the byte offset, and divide the byte offset by 512.
+
+This error injection mechanism seems similar or possibly equivalent to the mechanism used in the IRON file systems paper.
