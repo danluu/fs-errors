@@ -20,7 +20,7 @@ mkfs.<filesystem_name> filesystem.img
 sudo apt install dmsetup
 ~~~
 
-Requires btrfs drivers to be installed.
+Requires btrfs and exfat drivers to be installed.
 
 TODO(Wesley) more details
 
@@ -29,5 +29,7 @@ TODO(Wesley) more details
 Procedure to get error offset:
 
 Each filesystem contains `test.txt`. `test.txt` contains Lorem ipsum text (see images/text.txt).
+
+In the case of the -largefile images, `test.txt` contains the letters of the alphabet repeated enough to make 8K of text. See `images/large_test.txt`.
 
 To find the error offset for a new filesystem, you can open the file up in a hex editor, find the byte offset, and divide the byte offset by 512.
