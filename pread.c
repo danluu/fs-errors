@@ -29,8 +29,12 @@ int main(int argc, char *argv[]) {
 
   int saved_errno;
   ssize_t saved_rcode;
+  char saved_char;
   for (int i = 0; i < SIZE; ++i) {
     ssize_t rcode = pread(fd, &c, 1, i);
+    if (i == 0) {
+      saved_char = c;
+    }
     if (rcode < 0) {
       error_seen = 1;
       saved_errno = errno;
@@ -52,6 +56,7 @@ int main(int argc, char *argv[]) {
     printf("read fail. errno: %s\n", strerror(saved_errno));
     return saved_rcode;
   } else {
+    printf("%c\n", saved_char);
     return 0;
   }
 }
