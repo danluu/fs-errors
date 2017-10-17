@@ -12,5 +12,5 @@ images/ext4-largefile.img.gz,7778,2717e3c9509fc662ae67ebf5293e1c97
 images/jfs-largefile.img.gz,360,e2b14f7b4196fc74026b4b3c72f48ee4
 images/xfs-largefile.img.gz,6976,1d49afb6385df87742d8766d7c657b6c
 images/fat12-largefile.img.gz,49,0559b8f3bf655a840f576b9157de2690
-images/ext3-largefile.img.gz,76,612a760c510164ed73020a204c800544
-images/btrfs-largefile.img.gz,24576,2d9932828691e1b337307ed7ce47b445
+images/ext3-largefile.img.gz,76,d3dc8738942a7664e38391e3fb91f789
+images/btrfs-largefile.img.gz,24576,cc373cf71b96728374912e056cc4c065
