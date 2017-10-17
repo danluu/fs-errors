@@ -157,8 +157,7 @@ def read_config():
                            'md5sum': row[2]})
     return inputs
 
-
-def main():
+def run_read_write_error_tests():
     results_path = 'fs-results.csv'
     configs = read_config()
 
@@ -185,5 +184,8 @@ def main():
             exec_command(["dmsetup", "remove", dm_volume_name])
             exec_command(["losetup", "-d", loopback_name])
             os.remove(tmp_image_path)
+
+def main():
+    run_read_write_error_tests()
 
 main()
