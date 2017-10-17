@@ -35,3 +35,5 @@ In the case of the -largefile images, `test.txt` contains the letters of the alp
 To find the error offset for a new filesystem, you can open the file up in a hex editor, find the byte offset, and divide the byte offset by 512.
 
 This error injection mechanism seems similar or possibly equivalent to the mechanism used in the IRON file systems paper.
+
+md5sum correctly returns an error code of 1 if the file is corrupt in btrfs (and prints md5sum: /mnt/test/test.txt: Input/output error).
