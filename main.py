@@ -20,13 +20,6 @@ def exec_command(command, exit_on_error=True):
 
     return command_result
 
-# TODO: allow using args or input config file.
-def get_args():
-    # Check for root
-    if os.geteuid() != 0:
-        print("You must be root to use this script")
-        exit(1)
-
 # Verify md5sum
 def verify_md5sum(image_path, filesystem_md5sum):
     if hashlib.md5(open(image_path, 'rb').read()).hexdigest() != filesystem_md5sum:
@@ -77,16 +70,23 @@ def get_device_size(loopback_name):
 
 
 # Calculate dmsetup table
-def get_dmsetup_table(device_size, loop_name, error_block):
-    dm_table = """\
-    0 {error_start} linear {loop_name} 0
-    {error_start} {error_size} error
-    {linear_start} {linear_end_size} linear {loop_name} {linear_start}""".format(
-        error_start=error_block[0],
-        loop_name=loop_name,
-        error_size=error_block[1],
-        linear_start=sum(error_block),
-        linear_end_size=device_size-sum(error_block))
+def get_dmsetup_table(device_size, loop_name, error_block, do_corruption):
+    if do_corruption:
+        dm_table = """\
+        0 {linear_end_size} linear {loop_name} 0""".format(
+            loop_name=loop_name,
+            linear_end_size=device_size)
+    else:
+
+        dm_table = """\
+        0 {error_start} linear {loop_name} 0
+        {error_start} {error_size} error
+        {linear_start} {linear_end_size} linear {loop_name} {linear_start}""".format(
+            error_start=error_block[0],
+            loop_name=loop_name,
+            error_size=error_block[1],
+            linear_start=sum(error_block),
+            linear_end_size=device_size-sum(error_block))
 
     commented_table = '#' + '#'.join(dm_table.splitlines(True))
     print(commented_table)
@@ -125,7 +125,7 @@ def mount_dm_device(dm_volume_name):
 
     return mountpoint
 
-def exec_test(mountpoint, image_path, test_command, results_writer):
+def exec_test(mountpoint, image_path, test_command, results_writer, do_corruption):
     test_file = mountpoint + "test.txt"
     # Run test programs
     # TODO: make sure binary is built.
@@ -141,6 +141,7 @@ def exec_test(mountpoint, image_path, test_command, results_writer):
 
     results_writer.writerow([image_path,
                              test_command,
+                             do_corruption,
                              test_result.returncode,
                              test_result.stdout.decode('unicode_escape').strip(),
                              test_result.stderr.decode('utf-8').strip()])
@@ -157,35 +158,65 @@ def read_config():
                            'md5sum': row[2]})
     return inputs
 
-def run_read_write_error_tests():
+# TODO: merge config reading functions
+def read_corruption_config():
+    input_path = 'corruption-inputs.csv'
+    inputs = []
+    with open(input_path, 'r') as input_file:
+        input_reader = csv.reader(input_file)
+        next(input_reader, None) # skip header.
+        for row in input_reader:
+            inputs.append({'image': row[0],
+                           'offset': int(row[1]),
+                           'file-md5sum': row[2],
+                           'fs-md5sum': row[3]})
+    return inputs
+
+def setup_and_run_test(config, results_writer, do_corruption):
+    error_block = (config['offset'], 1) #TODO(Wesley) multi-section errors
+    tmp_image_path = make_tmpfile(config['image'], config['md5sum'])
+
+    if do_corruption:
+        corruption_commands = ['sed -i s/abcdef/watwat/ {}'.format(tmp_image_path),
+                               'sed -i s/Lorem/watwa/ {}'.format(tmp_image_path)]
+
+        for command in corruption_commands:
+            exec_command(command.split(' '))
+
+    loopback_name = make_loopback_device(tmp_image_path)
+    device_size = get_device_size(loopback_name)
+    dm_table = get_dmsetup_table(device_size, loopback_name, error_block, do_corruption)
+    dm_volume_name = run_dmsetup(dm_table)
+    mountpoint = mount_dm_device(dm_volume_name)
+
+    test_commands = ['./pread', './pwrite']
+    for command in test_commands:
+        exec_test(mountpoint, config['image'], command, results_writer, do_corruption)
+
+    # TODO: unmount, remove, etc., when an error occurs and the script terminates early.
+    exec_command(["umount", mountpoint])
+    exec_command(["dmsetup", "remove", dm_volume_name])
+    exec_command(["losetup", "-d", loopback_name])
+    os.remove(tmp_image_path)
+
+def run_all_tests():
     results_path = 'fs-results.csv'
     configs = read_config()
 
-    with open(results_path, 'w') as results_file:
-        results_writer = csv.writer(results_file)
+    for do_corruption in [True, False]:
+        with open(results_path, 'w') as results_file:
+            results_writer = csv.writer(results_file)
 
-        for config in configs:
-            get_args()
-            error_block = (config['offset'], 1) #TODO(Wesley) multi-section errors
-
-            tmp_image_path = make_tmpfile(config['image'], config['md5sum'])
-            loopback_name = make_loopback_device(tmp_image_path)
-            device_size = get_device_size(loopback_name)
-            dm_table = get_dmsetup_table(device_size, loopback_name, error_block)
-            dm_volume_name = run_dmsetup(dm_table)
-            mountpoint = mount_dm_device(dm_volume_name)
-
-            test_commands = ['./pread', './pwrite']
-            for command in test_commands:
-                exec_test(mountpoint, config['image'], command, results_writer)
-
-            # TODO: unmount, remove, etc., when an error occurs and the script terminates early.
-            exec_command(["umount", mountpoint])
-            exec_command(["dmsetup", "remove", dm_volume_name])
-            exec_command(["losetup", "-d", loopback_name])
-            os.remove(tmp_image_path)
+            for config in configs:
+                setup_and_run_test(config,
+                                   results_writer,
+                                   do_corruption)
 
 def main():
-    run_read_write_error_tests()
+    if os.geteuid() != 0:
+        print("You must be root to use this script")
+        exit(1)
+
+    run_all_tests()
 
 main()
