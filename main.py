@@ -177,11 +177,11 @@ def setup_and_run_test(config, results_writer, do_corruption):
     tmp_image_path = make_tmpfile(config['image'], config['md5sum'])
 
     if do_corruption:
-        corruption_commands = ['sed -i s/abcdef/watwat/ {}'.format(tmp_image_path),
-                               'sed -i s/Lorem/watwa/ {}'.format(tmp_image_path)]
+        corruption_commands = [['sed', '-i', '0,/abcdef/ s//watwat/', tmp_image_path],
+                               ['sed', '-i', '0,/Lorem / s//watwat/', tmp_image_path]]
 
         for command in corruption_commands:
-            exec_command(command.split(' '))
+            exec_command(command)
 
     loopback_name = make_loopback_device(tmp_image_path)
     device_size = get_device_size(loopback_name)
@@ -203,8 +203,8 @@ def run_all_tests():
     results_path = 'fs-results.csv'
     configs = read_config()
 
-    for do_corruption in [True, False]:
-        with open(results_path, 'w') as results_file:
+    with open(results_path, 'w') as results_file:
+        for do_corruption in [True, False]:
             results_writer = csv.writer(results_file)
 
             for config in configs:
