@@ -7,7 +7,7 @@
 #include <sys/types.h>
 #include <fcntl.h>
 
-#define SIZE 7999
+#define SIZE 445
 
 int main(int argc, char *argv[])
 {
