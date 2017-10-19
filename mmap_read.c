@@ -32,16 +32,12 @@ int main(int argc, char *argv[])
   }
 
   char c;
-  char saved_char;
   for(uint64_t i = 0; i < SIZE; i++)
   {
     c = memblock[i];
-    if (i == 0) {
-      saved_char = c;
-    }
     asm volatile("" :: "m" (c));
-    /*printf("%c", memblock[i]);*/
+    // printf("%c", memblock[i]);
   }
-  printf("%c",c);
+  printf("%c", memblock[0]);
   return 0;
 }
