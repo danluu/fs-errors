@@ -32,6 +32,7 @@ int main(int argc, char *argv[]) {
   char saved_char;
   for (int i = 0; i < SIZE; ++i) {
     ssize_t rcode = pread(fd, &c, 1, i);
+    asm volatile("" :: "m" (c));
     if (i == 0) {
       saved_char = c;
     }

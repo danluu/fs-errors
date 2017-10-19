@@ -34,7 +34,8 @@ int main(int argc, char *argv[])
   char c;
   for(uint64_t i = 0; i < SIZE; i++)
   {
-    c = memblock[i]; // Make sure to compile with -O0
+    c = memblock[i];
+    asm volatile("" :: "m" (c));
     /*printf("%c", memblock[i]);*/
   }
   printf("\n");
