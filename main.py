@@ -189,7 +189,7 @@ def setup_and_run_test(config, results_writer, do_corruption):
     dm_volume_name = run_dmsetup(dm_table)
     mountpoint = mount_dm_device(dm_volume_name)
 
-    test_commands = ['./pread', './pwrite', './mmap_read']
+    test_commands = ['./mmap_read', './pread', './pwrite']
     for command in test_commands:
         exec_test(mountpoint, config['image'], command, results_writer, do_corruption)
 
