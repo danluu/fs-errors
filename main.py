@@ -174,7 +174,7 @@ def read_corruption_config():
 
 def setup_and_run_test(config, results_writer, do_corruption):
     error_block = (config['offset'], 1) #TODO(Wesley) multi-section errors
-    test_commands = ['./mmap_read', './pread', './pwrite']
+    test_commands = ['./mmap_read', './mmap_write', './pread', './pwrite']
     for command in test_commands:
         tmp_image_path = make_tmpfile(config['image'], config['md5sum'])
 
