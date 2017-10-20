@@ -174,30 +174,30 @@ def read_corruption_config():
 
 def setup_and_run_test(config, results_writer, do_corruption):
     error_block = (config['offset'], 1) #TODO(Wesley) multi-section errors
-    tmp_image_path = make_tmpfile(config['image'], config['md5sum'])
-
-    if do_corruption:
-        corruption_commands = [['sed', '-i', '0,/abcdef/ s//watwat/', tmp_image_path],
-                               ['sed', '-i', '0,/Lorem / s//watwat/', tmp_image_path]]
-
-        for command in corruption_commands:
-            exec_command(command)
-
-    loopback_name = make_loopback_device(tmp_image_path)
-    device_size = get_device_size(loopback_name)
-    dm_table = get_dmsetup_table(device_size, loopback_name, error_block, do_corruption)
-    dm_volume_name = run_dmsetup(dm_table)
-    mountpoint = mount_dm_device(dm_volume_name)
-
     test_commands = ['./mmap_read', './pread', './pwrite']
     for command in test_commands:
+        tmp_image_path = make_tmpfile(config['image'], config['md5sum'])
+
+        if do_corruption:
+            corruption_commands = [['sed', '-i', '0,/abcdef/ s//watwat/', tmp_image_path],
+                                   ['sed', '-i', '0,/Lorem / s//watwat/', tmp_image_path]]
+
+            for corruption_command in corruption_commands:
+                exec_command(corruption_command)
+
+        loopback_name = make_loopback_device(tmp_image_path)
+        device_size = get_device_size(loopback_name)
+        dm_table = get_dmsetup_table(device_size, loopback_name, error_block, do_corruption)
+        dm_volume_name = run_dmsetup(dm_table)
+        mountpoint = mount_dm_device(dm_volume_name)
+
         exec_test(mountpoint, config['image'], command, results_writer, do_corruption)
 
-    # TODO: unmount, remove, etc., when an error occurs and the script terminates early.
-    exec_command(["umount", mountpoint])
-    exec_command(["dmsetup", "remove", dm_volume_name])
-    exec_command(["losetup", "-d", loopback_name])
-    os.remove(tmp_image_path)
+        # TODO: unmount, remove, etc., when an error occurs and the script terminates early.
+        exec_command(["umount", mountpoint])
+        exec_command(["dmsetup", "remove", dm_volume_name])
+        exec_command(["losetup", "-d", loopback_name])
+        os.remove(tmp_image_path)
 
 def run_all_tests():
     results_path = 'fs-results.csv'
