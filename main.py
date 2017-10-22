@@ -125,7 +125,7 @@ def mount_dm_device(dm_volume_name):
 
     return mountpoint
 
-def exec_test(mountpoint, image_path, test_command, results_writer, do_corruption):
+def exec_test(mountpoint, image_path, test_command, results_writer, do_corruption, do_overlay):
     test_file = mountpoint + "test.txt"
     # Run test programs
     # TODO: make sure binary is built.
@@ -139,9 +139,20 @@ def exec_test(mountpoint, image_path, test_command, results_writer, do_corruptio
     #                            test_result.stdout.decode('unicode_escape').strip(),
     #                            test_result.stderr.decode('utf-8').strip()))
 
+    if do_corruption:
+        corruption_output = 'corrupt'
+    else:
+        corruption_output = 'error'
+
+    if do_overlay:
+        overlay_output = 'overlay'
+    else:
+        overlay_output = 'raw'
+
     results_writer.writerow([image_path,
                              test_command,
-                             do_corruption,
+                             corruption_output,
+                             overlay_output,
                              test_result.returncode,
                              test_result.stdout.decode('unicode_escape').strip(),
                              test_result.stderr.decode('utf-8').strip()])
@@ -158,21 +169,7 @@ def read_config():
                            'md5sum': row[2]})
     return inputs
 
-# TODO: merge config reading functions
-def read_corruption_config():
-    input_path = 'corruption-inputs.csv'
-    inputs = []
-    with open(input_path, 'r') as input_file:
-        input_reader = csv.reader(input_file)
-        next(input_reader, None) # skip header.
-        for row in input_reader:
-            inputs.append({'image': row[0],
-                           'offset': int(row[1]),
-                           'file-md5sum': row[2],
-                           'fs-md5sum': row[3]})
-    return inputs
-
-def setup_and_run_test(config, results_writer, do_corruption):
+def setup_and_run_test(config, results_writer, do_corruption, do_overlay):
     error_block = (config['offset'], 1) #TODO(Wesley) multi-section errors
     test_commands = ['./mmap_read', './mmap_write', './pread', './pwrite']
     for command in test_commands:
@@ -185,15 +182,36 @@ def setup_and_run_test(config, results_writer, do_corruption):
             for corruption_command in corruption_commands:
                 exec_command(corruption_command)
 
+
         loopback_name = make_loopback_device(tmp_image_path)
         device_size = get_device_size(loopback_name)
         dm_table = get_dmsetup_table(device_size, loopback_name, error_block, do_corruption)
         dm_volume_name = run_dmsetup(dm_table)
         mountpoint = mount_dm_device(dm_volume_name)
 
-        exec_test(mountpoint, config['image'], command, results_writer, do_corruption)
+        if do_overlay:
+            overlay_upperdir = tempfile.mkdtemp()
+            overlay_workdir = tempfile.mkdtemp()
+            overlay_mount = tempfile.mkdtemp()
+            overlay_command = 'sudo mount -t overlay -o lowerdir={},upperdir={},workdir={} overlay {}'.format(
+                mountpoint,
+                overlay_upperdir,
+                overlay_workdir,
+                overlay_mount)
+            exec_command(overlay_command.split(' '))
+            target_mount = overlay_mount
+        else:
+            target_mount = mountpoint
+
+
+        exec_test(target_mount, config['image'], command, results_writer, do_corruption, do_overlay)
 
         # TODO: unmount, remove, etc., when an error occurs and the script terminates early.
+        if do_overlay:
+            exec_command(["umount", overlay_mount])
+            shutil.rmtree(overlay_upperdir)
+            shutil.rmtree(overlay_workdir)
+
         exec_command(["umount", mountpoint])
         exec_command(["dmsetup", "remove", dm_volume_name])
         exec_command(["losetup", "-d", loopback_name])
@@ -203,14 +221,26 @@ def run_all_tests():
     results_path = 'fs-results.csv'
     configs = read_config()
 
-    with open(results_path, 'w') as results_file:
-        for do_corruption in [True, False]:
-            results_writer = csv.writer(results_file)
+    no_overlay_support = {'images/fat12.img.gz',
+                          'images/fat12-largefile.img.gz'}
 
-            for config in configs:
-                setup_and_run_test(config,
-                                   results_writer,
-                                   do_corruption)
+    with open(results_path, 'w') as results_file:
+        for do_corruption in [False, True]:
+            for do_overlay in [True, False]:
+
+                results_writer = csv.writer(results_file)
+
+                for config in configs:
+                    if do_overlay and config['image'] in no_overlay_support:
+                        print('# skipping {} due to lack of overlay support'.format(
+                            config['image']))
+                        continue
+
+
+                    setup_and_run_test(config,
+                                       results_writer,
+                                       do_corruption,
+                                       do_overlay)
 
 def main():
     if os.geteuid() != 0:
