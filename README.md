@@ -4,6 +4,7 @@ This repo contains tooling for injecting errors into filesystems using device-ma
 
 To run:
 ~~~
+make all
 sudo python3 main.py
 ~~~
 
