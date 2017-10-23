@@ -209,12 +209,15 @@ def setup_and_run_test(config, results_writer, do_corruption, do_overlay):
         # TODO: unmount, remove, etc., when an error occurs and the script terminates early.
         if do_overlay:
             exec_command(["umount", overlay_mount])
+            print('rm -rf {}'.format(overlay_upperdir))
             shutil.rmtree(overlay_upperdir)
+            print('rm -rf {}'.format(overlay_workdir))
             shutil.rmtree(overlay_workdir)
 
         exec_command(["umount", mountpoint])
         exec_command(["dmsetup", "remove", dm_volume_name])
         exec_command(["losetup", "-d", loopback_name])
+        print('rm {}'.format(tmp_image_path))
         os.remove(tmp_image_path)
 
 def run_all_tests():
