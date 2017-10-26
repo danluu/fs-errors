@@ -193,7 +193,7 @@ def setup_and_run_test(config, results_writer, do_corruption, do_overlay):
             overlay_upperdir = tempfile.mkdtemp()
             overlay_workdir = tempfile.mkdtemp()
             overlay_mount = tempfile.mkdtemp() + '/'
-            overlay_command = 'sudo mount -t overlay -o lowerdir={},upperdir={},workdir={} overlay {}'.format(
+            overlay_command = 'mount -t overlay -o lowerdir={},upperdir={},workdir={} overlay {}'.format(
                 mountpoint,
                 overlay_upperdir,
                 overlay_workdir,
